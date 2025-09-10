@@ -1,5 +1,5 @@
 [project]
-name = "tidevice3"
+name = "rc-tidevice3"
 version = "0.1.1"
 description = "forked from codeskyblue/tidevice3, wrapper for pymobiledevice3 for easy use with iphone device"
 readme = "README.md"
@@ -7,7 +7,26 @@ license = {text = "MIT"}
 authors = [
     {name = "mthorta001", email = "mthorta001@gmail.com"}
 ]
+maintainers = [
+    {name = "mthorta001", email = "mthorta001@gmail.com"}
+]
 requires-python = ">=3.8"
+keywords = ["ios", "iphone", "device", "automation", "pymobiledevice3", "mobile", "testing"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: System :: Hardware :: Hardware Drivers",
+    "Topic :: Utilities",
+]
 dependencies = [
     "pymobiledevice3>=4.2.3",
     "click",
@@ -34,10 +53,16 @@ t3 = "tidevice3.__main__:main"
 [project.urls]
 Homepage = "https://github.com/mthorta001/tidevice3"
 Repository = "https://github.com/mthorta001/tidevice3"
+Documentation = "https://github.com/mthorta001/tidevice3#readme"
+Issues = "https://github.com/mthorta001/tidevice3/issues"
+Changelog = "https://github.com/mthorta001/tidevice3/releases"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tidevice3"]
 
 [tool.coverage.run]
 branch = true
