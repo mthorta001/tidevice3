@@ -64,14 +64,33 @@ def list_devices(
         if network and not device.is_network:
             continue
 
-        lockdown = create_using_usbmux(
-            udid,
-            autopair=False,
-            connection_type=device.connection_type,
-            usbmux_address=usbmux_address,
-        )
-        info = DeviceShortInfo.model_validate(lockdown.short_info)
-        connected_devices.append(info)
+        try:
+            lockdown = create_using_usbmux(
+                udid,
+                autopair=False,
+                connection_type=device.connection_type,
+                usbmux_address=usbmux_address,
+            )
+            info = DeviceShortInfo.model_validate(lockdown.short_info)
+            connected_devices.append(info)
+        except Exception as e:
+            logger.warning(f"Failed to connect to device {udid}: {e}")
+            # Create a minimal device info for failed devices
+            try:
+                failed_info = DeviceShortInfo(
+                    BuildVersion="Unknown",
+                    ConnectionType=device.connection_type,
+                    DeviceClass="Unknown", 
+                    DeviceName=f"Device({udid[:8]}...)",
+                    Identifier=udid,
+                    ProductType="Unknown",
+                    ProductVersion="Unknown"
+                )
+                connected_devices.append(failed_info)
+                logger.info(f"Added device {udid} with limited info due to connection issues")
+            except Exception:
+                logger.error(f"Completely skipping device {udid} due to severe connection issues")
+                continue
     return connected_devices
 
 
