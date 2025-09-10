@@ -1,6 +1,6 @@
 [project]
 name = "rc-tidevice3"
-version = "0.1.5"
+version = "0.1.6"
 description = "forked from codeskyblue/tidevice3, wrapper for pymobiledevice3 for easy use with iphone device"
 readme = "README.md"
 license = {text = "MIT"}
