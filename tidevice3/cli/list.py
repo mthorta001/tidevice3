@@ -18,17 +18,17 @@ from tidevice3.utils.common import print_dict_as_table
 @click.option("-n", "--network", is_flag=True, help="show only network devices")
 @click.option("--json", is_flag=True, help="output as json format")
 @click.option("--color/--no-color", default=True, help="print colored output")
-@click.option("--timeout", default=5.0, type=float, help="timeout for device connection in seconds (default: 5.0)")
+@click.option("--timeout", default=10.0, type=float, help="timeout for device connection in seconds (default: 10.0)")
 @click.option("-v", "--verbose", is_flag=True, help="show detailed connection process")
 @click.pass_context
 def cli_list(ctx: click.Context, usb: bool, network: bool, json: bool, color: bool, timeout: float, verbose: bool):
     """List connected devices
     
     Examples:
-        t3 list                    # List all devices (default timeout: 5s)
+        t3 list                    # List all devices (default timeout: 10s)
         t3 list --usb              # List only USB devices
         t3 list --network          # List only network devices  
-        t3 list --timeout 10       # Use 10s timeout
+        t3 list --timeout 5        # Use 5s timeout (faster)
         t3 list --verbose          # Show connection progress
         t3 list --json             # Output as JSON
     """
@@ -50,7 +50,13 @@ def cli_list(ctx: click.Context, usb: bool, network: bool, json: bool, color: bo
     if verbose:
         click.echo(f"🔍 Searching for devices (timeout: {timeout}s)...")
     
-    devices = list_devices(usb, network, usbmux_address, timeout)
+    # Handle CLI flag logic: if no flags specified, show all devices
+    if not usb and not network:
+        # No specific filter requested, show all device types
+        devices = list_devices(usb=True, network=True, usbmux_address=usbmux_address, timeout=timeout)
+    else:
+        # User specified specific device types
+        devices = list_devices(usb=usb, network=network, usbmux_address=usbmux_address, timeout=timeout)
     
     if not devices:
         if verbose:
