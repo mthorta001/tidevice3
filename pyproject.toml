@@ -1,6 +1,6 @@
 [project]
 name = "rc-tidevice3"
-version = "0.1.1"
+version = "0.1.2"
 description = "forked from codeskyblue/tidevice3, wrapper for pymobiledevice3 for easy use with iphone device"
 readme = "README.md"
 license = {text = "MIT"}
@@ -91,4 +91,9 @@ omit = [
     "tests/*",
     "docs/*",
     "__main__.py",
+]
+
+[dependency-groups]
+dev = [
+    "twine>=6.1.0",
 ]

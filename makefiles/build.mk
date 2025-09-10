@@ -23,11 +23,7 @@ build: clean pre-build ## Build package for distribution
 # Validate package before publishing
 validate: build ## Validate package before publishing
 	@echo "$(YELLOW)🔍 Validating package...$(NC)"
-	@if command -v twine >/dev/null 2>&1; then \
-		$(UV) run python -m twine check $(BUILD_DIR)/*; \
-	else \
-		echo "$(YELLOW)⚠️ twine not available, skipping validation$(NC)"; \
-	fi
+	$(UV) run twine check $(BUILD_DIR)/*
 	@echo "$(GREEN)✅ Package validation completed$(NC)"
 
 # Check if build artifacts exist

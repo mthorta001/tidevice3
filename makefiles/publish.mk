@@ -15,13 +15,12 @@ confirm-production:
 # Publish to TestPyPI
 publish-test: build check-build ## Build and publish to TestPyPI
 	@echo "$(YELLOW)🚀 Publishing to TestPyPI...$(NC)"
-	@if [ -z "$$TESTPYPI_TOKEN" ]; then \
-		echo "$(RED)❌ TESTPYPI_TOKEN environment variable not set$(NC)"; \
-		echo "$(BLUE)Please set your TestPyPI token:$(NC)"; \
-		echo "  export TESTPYPI_TOKEN='pypi-YOUR_TESTPYPI_TOKEN_HERE'"; \
+	@if [ ! -f ~/.pypirc ]; then \
+		echo "$(RED)❌ ~/.pypirc file not found$(NC)"; \
+		echo "$(BLUE)Please create ~/.pypirc file with your tokens$(NC)"; \
 		exit 1; \
 	fi
-	$(UV) publish --publish-url https://test.pypi.org/legacy/ --token $$TESTPYPI_TOKEN $(BUILD_DIR)/*
+	$(UV) run twine upload --repository testpypi $(BUILD_DIR)/*
 	@echo "$(GREEN)🎉 Published to TestPyPI successfully!$(NC)"
 	@echo ""
 	@echo "$(BLUE)🧪 Test your package:$(NC)"
@@ -33,13 +32,12 @@ publish-test: build check-build ## Build and publish to TestPyPI
 # Publish to PyPI (production)
 publish: build check-build confirm-production ## Build and publish to PyPI (production)
 	@echo "$(YELLOW)📤 Publishing to PyPI...$(NC)"
-	@if [ -z "$$PYPI_TOKEN" ]; then \
-		echo "$(RED)❌ PYPI_TOKEN environment variable not set$(NC)"; \
-		echo "$(BLUE)Please set your PyPI token:$(NC)"; \
-		echo "  export PYPI_TOKEN='pypi-YOUR_PYPI_TOKEN_HERE'"; \
+	@if [ ! -f ~/.pypirc ]; then \
+		echo "$(RED)❌ ~/.pypirc file not found$(NC)"; \
+		echo "$(BLUE)Please create ~/.pypirc file with your tokens$(NC)"; \
 		exit 1; \
 	fi
-	$(UV) publish --publish-url https://upload.pypi.org/legacy/ --token $$PYPI_TOKEN $(BUILD_DIR)/*
+	$(UV) run twine upload $(BUILD_DIR)/*
 	@echo "$(GREEN)🎉 Published to PyPI successfully!$(NC)"
 	@echo ""
 	@echo "$(BLUE)🔗 View on PyPI:$(NC)"
