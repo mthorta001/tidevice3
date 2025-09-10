@@ -6,6 +6,7 @@ import io
 import logging
 import os
 import socket
+from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
 from typing import Any, Dict, Iterator, Optional
 
 import requests
@@ -51,46 +52,77 @@ class ProcessInfo(BaseModel):
     foregroundRunning: Optional[bool] = None
 
 
+def _connect_to_device(device, usbmux_address: Optional[str] = None) -> Optional[DeviceShortInfo]:
+    """Helper function to connect to a single device with error handling"""
+    udid = device.serial
+    try:
+        lockdown = create_using_usbmux(
+            udid,
+            autopair=False,
+            connection_type=device.connection_type,
+            usbmux_address=usbmux_address,
+        )
+        info = DeviceShortInfo.model_validate(lockdown.short_info)
+        logger.debug(f"Successfully connected to device {udid}")
+        return info
+    except Exception as e:
+        logger.warning(f"Failed to connect to device {udid}: {e}")
+        return None
+
+
 def list_devices(
-    usb: bool = True, network: bool = False, usbmux_address: Optional[str] = None
+    usb: bool = True, network: bool = False, usbmux_address: Optional[str] = None, timeout: float = 5.0
 ) -> list[DeviceShortInfo]:
+    """List connected devices with timeout for each device connection"""
+    devices = usbmux.list_devices(usbmux_address=usbmux_address)
+    
+    # Filter devices based on connection type - simplified logic
+    if not usb and not network:
+        # If both are False, show all devices
+        filtered_devices = devices
+    else:
+        filtered_devices = [
+            device for device in devices
+            if (usb and device.is_usb) or (network and device.is_network)
+        ]
+    
+    if not filtered_devices:
+        logger.info("No devices found matching the criteria")
+        return []
+    
+    logger.info(f"Found {len(filtered_devices)} devices, checking connectivity...")
     connected_devices = []
-    for device in usbmux.list_devices(usbmux_address=usbmux_address):
-        udid = device.serial
-
-        if usb and not device.is_usb:
-            continue
-
-        if network and not device.is_network:
-            continue
-
-        try:
-            lockdown = create_using_usbmux(
-                udid,
-                autopair=False,
-                connection_type=device.connection_type,
-                usbmux_address=usbmux_address,
-            )
-            info = DeviceShortInfo.model_validate(lockdown.short_info)
-            connected_devices.append(info)
-        except Exception as e:
-            logger.warning(f"Failed to connect to device {udid}: {e}")
-            # Create a minimal device info for failed devices
+    
+    # Use ThreadPoolExecutor to process devices with timeout
+    max_workers = min(len(filtered_devices), 4)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all device connection tasks
+        future_to_device = {
+            executor.submit(_connect_to_device, device, usbmux_address): device 
+            for device in filtered_devices
+        }
+        
+        # Process completed tasks - removed the problematic total timeout
+        completed_count = 0
+        for future in as_completed(future_to_device):
+            device = future_to_device[future]
+            udid = device.serial
+            completed_count += 1
+            
             try:
-                failed_info = DeviceShortInfo(
-                    BuildVersion="Unknown",
-                    ConnectionType=device.connection_type,
-                    DeviceClass="Unknown", 
-                    DeviceName=f"Device({udid[:8]}...)",
-                    Identifier=udid,
-                    ProductType="Unknown",
-                    ProductVersion="Unknown"
-                )
-                connected_devices.append(failed_info)
-                logger.info(f"Added device {udid} with limited info due to connection issues")
-            except Exception:
-                logger.error(f"Completely skipping device {udid} due to severe connection issues")
-                continue
+                # Individual timeout for each device
+                result = future.result(timeout=timeout)
+                if result is not None:
+                    connected_devices.append(result)
+                    logger.debug(f"Device {udid} connected successfully ({completed_count}/{len(filtered_devices)})")
+                else:
+                    logger.debug(f"Device {udid} connection failed ({completed_count}/{len(filtered_devices)})")
+            except TimeoutError:
+                logger.warning(f"Timeout connecting to device {udid} after {timeout}s ({completed_count}/{len(filtered_devices)})")
+            except Exception as e:
+                logger.warning(f"Unexpected error with device {udid}: {e} ({completed_count}/{len(filtered_devices)})")
+    
+    logger.info(f"Successfully connected to {len(connected_devices)}/{len(filtered_devices)} devices")
     return connected_devices
 
 
