@@ -52,7 +52,7 @@ class ProcessInfo(BaseModel):
     foregroundRunning: Optional[bool] = None
 
 
-def _connect_to_device(device, usbmux_address: Optional[str] = None, timeout: float = 10.0) -> Optional[DeviceShortInfo]:
+def _connect_to_device(device, usbmux_address: Optional[str] = None, timeout: float = 5.0) -> Optional[DeviceShortInfo]:
     """Helper function to connect to a single device with error handling"""
     udid = device.serial
     
@@ -120,11 +120,11 @@ def list_devices(
         # Process completed tasks as they finish, with overall timeout protection
         completed_count = 0
         # Since devices are processed in parallel, overall timeout should be close to individual timeout
-        overall_timeout = timeout + 5  # Individual timeout + 5 seconds buffer
-        logger.debug(f"Timeout strategy: {timeout}s per device + 5s buffer = {overall_timeout}s total")
+        # overall_timeout = timeout + 5  # Individual timeout + 5 seconds buffer
+        # logger.debug(f"Timeout strategy: {timeout}s per device + 5s buffer = {timeout}s total")
         
         try:
-            for future in as_completed(future_to_device, timeout=overall_timeout):
+            for future in as_completed(future_to_device, timeout=timeout):
                 device = future_to_device[future]
                 udid = device.serial
                 completed_count += 1
@@ -141,7 +141,7 @@ def list_devices(
                     logger.warning(f"Unexpected error with device {udid}: {e} ({completed_count}/{len(filtered_devices)})")
         except TimeoutError:
             # Overall timeout reached - cancel remaining futures
-            logger.warning(f"Overall timeout ({overall_timeout}s) reached, cancelling remaining connections")
+            logger.warning(f"Overall timeout ({timeout}s) reached, cancelling remaining connections")
             for future in future_to_device:
                 if not future.done():
                     future.cancel()
